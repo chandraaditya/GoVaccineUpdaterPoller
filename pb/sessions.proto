@@ -1,0 +1,36 @@
+syntax="proto3";
+
+package pb.pb;
+option go_package="/parser";
+
+message Session {
+  uint32 center_id = 1;
+  string session_id = 2;
+  uint32 available_capacity = 3;
+  string block_name = 4;
+  string fee_type = 5;
+  string name = 6;
+  float long = 7;
+  string vaccine = 8;
+  uint32 available_capacity_dose1 = 9;
+  string district_name = 10;
+  string date = 11;
+  uint32 pincode = 12;
+  uint32 min_age_limit = 13;
+  string to = 14;
+  string from = 15;
+  float lat = 16;
+  string state_name = 17;
+  string fee = 18;
+  repeated string slots = 19;
+  string address = 20;
+  uint32 available_capacity_dose2 = 21;
+}
+
+message Sessions {
+  repeated Session sessions = 1;
+}
+
+message AllSessions {
+  repeated Sessions sessions = 1;
+}
