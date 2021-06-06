@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"GoVaccineUpdaterPoller/parser"
+	"fmt"
 	"time"
 )
 
@@ -23,6 +24,16 @@ func NewNotifier() Notifier {
 }
 
 func (n *Notifier) Notify(sessions map[string]*parser.Session) {
+	for i := range n.NotifiedDose1 {
+		if _, ok := sessions[n.NotifiedDose1[i].Session.GetSessionId()]; !ok {
+			n.ZeroSlotsLeft(n.NotifiedDose1[i].Session.GetSessionId(), 1)
+		}
+	}
+	for i := range n.NotifiedDose2 {
+		if _, ok := sessions[n.NotifiedDose2[i].Session.GetSessionId()]; !ok {
+			n.ZeroSlotsLeft(n.NotifiedDose2[i].Session.GetSessionId(), 2)
+		}
+	}
 	for i := range sessions {
 		session := sessions[i]
 		if session.GetAvailableCapacityDose1() > 0 {
@@ -46,6 +57,7 @@ func (n *Notifier) SlotsOpen(session *parser.Session, dose int) {
 				Session:    session,
 				TimeCaught: time.Now(),
 			}
+			fmt.Println(session.GetSessionId(), session.GetAvailableCapacityDose1())
 		}
 	}
 	if dose == 2 {
@@ -54,6 +66,7 @@ func (n *Notifier) SlotsOpen(session *parser.Session, dose int) {
 				Session:    session,
 				TimeCaught: time.Now(),
 			}
+			fmt.Println(session.GetSessionId(), session.GetAvailableCapacityDose2())
 		}
 	}
 }
