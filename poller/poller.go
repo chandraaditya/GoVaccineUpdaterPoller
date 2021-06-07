@@ -19,7 +19,6 @@ type SessionsReturned struct {
 }
 
 func RunRequests(urls []*url.URL, client *http.Client, sleepDurationBetweenCalls time.Duration) (sessions map[string]*parser.Session) {
-	//sessions = make([]*parser.Session, 0)
 	sessions = map[string]*parser.Session{}
 	c := make(chan SessionsReturned)
 	var wg sync.WaitGroup
