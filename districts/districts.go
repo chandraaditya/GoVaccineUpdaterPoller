@@ -97,7 +97,8 @@ func GetDistrictsMap() (Map, error) {
 	u := "https://api.cowin.gov.in/api/v2/admin/location/states"
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return Map{}, err
 	}
 	req := &http.Request{
 		Method: "GET",
@@ -110,12 +111,14 @@ func GetDistrictsMap() (Map, error) {
 
 	do, err := client.Do(req)
 	if err != nil {
+		log.Println(err)
 		return Map{}, err
 	}
 
 	var states States
 	err = json.NewDecoder(do.Body).Decode(&states)
 	if err != nil {
+		log.Println(err)
 		return Map{}, err
 	}
 
@@ -130,10 +133,12 @@ func GetDistrictsMap() (Map, error) {
 		req.URL = parsedURL
 		do, err = client.Do(req)
 		if err != nil {
+			log.Println(err)
 			return Map{}, err
 		}
 		err = json.NewDecoder(do.Body).Decode(&districts)
 		if err != nil {
+			log.Println(err)
 			return Map{}, err
 		}
 

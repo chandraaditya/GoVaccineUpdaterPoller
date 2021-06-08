@@ -40,7 +40,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte(`{"message": "bad request"}`))
+		_, err = w.Write([]byte(`{"message": "bad request"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -53,7 +53,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if !verified {
 		log.Println(err)
 		w.WriteHeader(http.StatusUnauthorized)
-		_, err := w.Write([]byte(`{"message": "unauthorized request"}`))
+		_, err = w.Write([]byte(`{"message": "unauthorized request"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -67,7 +67,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if errPRU1 != nil && errPRU2 != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte(`{"message": "invalid slot_open_webhook or slot_closed_webhook, either one of the fields must be valid endpoints, but both are not required"}`))
+		_, err = w.Write([]byte(`{"message": "invalid slot_open_webhook or slot_closed_webhook, either one of the fields must be valid endpoints, but both are not required"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -80,7 +80,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		_, err := w.Write([]byte(`{"message": "internal server error"}`))
+		_, err = w.Write([]byte(`{"message": "internal server error"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -92,7 +92,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	for i := range config.DistrictsSubscribedTo {
 		if !districtsMap.VerifyDistrict(config.DistrictsSubscribedTo[i]) {
 			w.WriteHeader(http.StatusBadRequest)
-			_, err := w.Write([]byte(`{"message": "` + strconv.Itoa(int(config.DistrictsSubscribedTo[i])) + ` is not a valid district"}`))
+			_, err = w.Write([]byte(`{"message": "` + strconv.Itoa(int(config.DistrictsSubscribedTo[i])) + ` is not a valid district"}`))
 			if err != nil {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				log.Println(err)
@@ -106,7 +106,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		_, err := w.Write([]byte(`{"message": "internal server error"}`))
+		_, err = w.Write([]byte(`{"message": "internal server error"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -119,7 +119,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		_, err := w.Write([]byte(`{"message": "internal server error"}`))
+		_, err = w.Write([]byte(`{"message": "internal server error"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			log.Println(err)
@@ -166,7 +166,7 @@ func (s *server) Status(w http.ResponseWriter, _ *http.Request) {
 			return
 		}
 	}
-	tm := time.Unix(status.LastUpdated, 0)
+	tm := time.Unix(status.LastUpdated, 0).Local()
 	_, err = fmt.Fprintf(w, "update frequency: %fs\nlast updated: %s", status.UpdateFrequency, tm.String())
 	if err != nil {
 		log.Println("error reading status", err)

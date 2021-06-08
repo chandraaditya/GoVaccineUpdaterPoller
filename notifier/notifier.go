@@ -80,7 +80,6 @@ func (n *Notifier) Notify(sessions map[string]*parser.Session, client *http.Clie
 }
 
 func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, districtMap districts2.Map, session *parser.Session, dose int) {
-	// TODO: Send notifications
 	districtID := districtMap.GetDistrictID(session.StateName, session.DistrictName)
 	URLs := webhook.GetOpenWebhooksForDistrict(districtID)
 	if dose == 1 {
@@ -122,7 +121,6 @@ func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, dis
 }
 
 func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client, districtMap districts2.Map, sessionId string, dose int) {
-	// TODO: Send notifications
 	if dose == 1 {
 		session := n.NotifiedDose1[sessionId]
 		if _, ok := n.NotifiedDose1[sessionId]; ok {

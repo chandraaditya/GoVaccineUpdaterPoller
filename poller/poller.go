@@ -94,7 +94,13 @@ func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned
 		if err != nil {
 			IgnoreError(err)
 		}
-		sessionsReturned.Session = parser.ParseSessions(body)
+		sessionsReturned.Session, err = parser.ParseSessions(body)
+		if err != nil {
+			statusCode = -1
+			retries--
+			time.Sleep(retrySleepDuration)
+			continue
+		}
 		statusCode = resp.StatusCode
 		break
 	}
@@ -106,7 +112,8 @@ func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned
 func GenURLs(districtsToPoll []uint32, days int) (urls []*url.URL) {
 	location, err := time.LoadLocation("Asia/Kolkata")
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
 	timeInUTC := time.Now()
 	today := timeInUTC.In(location)

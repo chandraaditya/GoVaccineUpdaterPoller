@@ -64,7 +64,7 @@ func startPolling() {
 			}
 			districtsMapTemp, err := districts.GetDistrictsMap()
 			if err != nil {
-				log.Fatalln(err)
+				log.Println(err)
 			} else {
 				districtsMap = districtsMapTemp
 			}
