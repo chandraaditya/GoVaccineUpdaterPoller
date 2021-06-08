@@ -62,14 +62,14 @@ func (n *Notifier) Notify(sessions map[string]*parser.Session, client *http.Clie
 			runtime.Gosched()
 		}
 		session := sessions[i]
-		if session.GetAvailableCapacityDose1() > 0 {
+		if session.AvailableCapacityDose1 > 0 {
 			count++
 			n.SlotsOpen(webhook, client, districtMap, session, 1)
 		} else {
 			count++
 			n.ZeroSlotsLeft(webhook, client, districtMap, session.GetSessionId(), 1)
 		}
-		if session.GetAvailableCapacityDose2() > 0 {
+		if session.AvailableCapacityDose2 > 0 {
 			count++
 			n.SlotsOpen(webhook, client, districtMap, session, 2)
 		} else {
@@ -125,7 +125,7 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 		session := n.NotifiedDose1[sessionId]
 		if _, ok := n.NotifiedDose1[sessionId]; ok {
 			districtID := districtMap.GetDistrictID(session.Session.StateName, session.Session.DistrictName)
-			URLs := webhook.GetOpenWebhooksForDistrict(districtID)
+			URLs := webhook.GetCloseWebhooksForDistrict(districtID)
 			webhookSession := parser.CloseWebhook{
 				Dose:            1,
 				Session:         session.Session,
@@ -144,7 +144,7 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 		session := n.NotifiedDose2[sessionId]
 		if _, ok := n.NotifiedDose2[sessionId]; ok {
 			districtID := districtMap.GetDistrictID(session.Session.StateName, session.Session.DistrictName)
-			URLs := webhook.GetOpenWebhooksForDistrict(districtID)
+			URLs := webhook.GetCloseWebhooksForDistrict(districtID)
 			webhookSession := parser.CloseWebhook{
 				Dose:            1,
 				Session:         session.Session,
