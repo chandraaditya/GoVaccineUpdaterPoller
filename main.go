@@ -17,15 +17,16 @@ import (
 const rounds = 100
 
 func main() {
-	//webhook.StartWebhookServer()
 	go webhook.StartWebhookServer()
 	startPolling()
 }
 
 func startPolling() {
-	transport := &http2.Transport{}
 	client := &http.Client{
-		Transport: transport,
+		Transport: &http2.Transport{},
+	}
+	clientForNotifier := &http.Client{
+		Transport: &http.Transport{},
 	}
 	notifierClient := notifier.NewNotifier()
 	webhookDistricts, err := webhook.NewDistricts()
@@ -35,6 +36,10 @@ func startPolling() {
 	districtsFromWebhook := webhookDistricts.GetDistricts()
 	districtsToPoll := districts.GetDistrictsToPoll(districtsFromWebhook, 1, 0)
 	log.Println(districtsToPoll)
+	districtsMap, err := districts.GetDistrictsMap()
+	if err != nil {
+		log.Fatalln(err)
+	}
 	round := 0
 	avgTime := 0.0
 	for {
@@ -57,6 +62,12 @@ func startPolling() {
 				log.Println(err)
 				continue
 			}
+			districtsMapTemp, err := districts.GetDistrictsMap()
+			if err != nil {
+				log.Fatalln(err)
+			} else {
+				districtsMap = districtsMapTemp
+			}
 			districtsFromWebhook = webhookDistricts.GetDistricts()
 			districtsToPoll = districts.GetDistrictsToPoll(districtsFromWebhook, 1, 0)
 			round = 0
@@ -64,7 +75,7 @@ func startPolling() {
 		start := time.Now()
 		urls := poller.GenURLs(districtsToPoll, 7)
 		sessions := poller.RunRequests(urls, client, 0)
-		notifierClient.Notify(sessions)
+		notifierClient.Notify(sessions, clientForNotifier, webhookDistricts, districtsMap)
 		fmt.Println(round, time.Since(start))
 		avgTime += time.Since(start).Seconds()
 		round++

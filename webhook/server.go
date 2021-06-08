@@ -49,7 +49,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verified := VeirfyAPIKey(config.ApiKey)
+	verified := VerifyAPIKey(config.ApiKey)
 	if !verified {
 		log.Println(err)
 		w.WriteHeader(http.StatusUnauthorized)

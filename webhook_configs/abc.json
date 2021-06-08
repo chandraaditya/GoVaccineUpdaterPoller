@@ -1,8 +1,0 @@
-{
-  "api_key": "abc",
-  "slot_open_webhook": "NONE",
-  "slot_closed_webhook": "NONE",
-  "districts_subscribed_to": [
-    932
-  ]
-}

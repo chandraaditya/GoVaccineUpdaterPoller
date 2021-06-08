@@ -3,6 +3,19 @@ syntax="proto3";
 package pb.pb;
 option go_package="/parser";
 
+import "google/protobuf/duration.proto";
+
+message OpenWebhook {
+  uint32 dose = 1;
+  Session session = 2;
+}
+
+message CloseWebhook {
+  uint32 dose = 1;
+  Session session = 2;
+  google.protobuf.Duration duration_open_for = 3;
+}
+
 message Session {
   uint32 center_id = 1;
   string session_id = 2;

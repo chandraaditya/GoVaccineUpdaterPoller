@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net/url"
 )
 
 type Districts struct {
@@ -21,7 +22,7 @@ type APIKeys struct {
 	ApiKeys []string `json:"api_keys"`
 }
 
-func VeirfyAPIKey(key string) bool {
+func VerifyAPIKey(key string) bool {
 	var apiKeys APIKeys
 	keys, err := ioutil.ReadFile("webhook_configs/keys.json")
 	if err != nil {
@@ -91,4 +92,30 @@ func (w *Districts) GetDistricts() []uint32 {
 		slice = append(slice, i)
 	}
 	return slice
+}
+
+func (w *Districts) GetOpenWebhooksForDistrict(district uint32) []*url.URL {
+	webhooks := make([]*url.URL, 0)
+	configs := w.DistrictsWithDestinations[district]
+	for _, config := range configs {
+		URL, err := url.ParseRequestURI(config.SlotOpenWebhook)
+		if err != nil {
+			continue
+		}
+		webhooks = append(webhooks, URL)
+	}
+	return webhooks
+}
+
+func (w *Districts) GetCloseWebhooksForDistrict(district uint32) []*url.URL {
+	webhooks := make([]*url.URL, 0)
+	configs := w.DistrictsWithDestinations[district]
+	for _, config := range configs {
+		URL, err := url.ParseRequestURI(config.SlotClosedWebhook)
+		if err != nil {
+			continue
+		}
+		webhooks = append(webhooks, URL)
+	}
+	return webhooks
 }
