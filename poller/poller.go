@@ -4,8 +4,8 @@ import (
 	"GoVaccineUpdaterPoller/parser"
 	"fmt"
 	"github.com/go-logr/logr"
+	"golang.org/x/net/http2"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -19,19 +19,66 @@ type SessionsReturned struct {
 	StatusCode int
 }
 
-func RunRequests(urls []*url.URL, client *http.Client, sleepDurationBetweenCalls time.Duration, log logr.Logger) (sessions map[string]*parser.Session) {
+type Poller struct {
+	log                       logr.Logger
+	location                  *time.Location
+	client                    *http.Client
+	sleepDurationBetweenCalls time.Duration
+}
+
+type DistrictPollRequest struct {
+	DistrictId uint32
+	Date       time.Time
+}
+
+func (r DistrictPollRequest) GetUrl() *url.URL {
+	URL := "https://api.cowin.gov.in/api/v2/appointment/sessions/public/findByDistrict?district_id=" + fmt.Sprint(r.DistrictId) + "&date=" + strconv.Itoa(r.Date.Day()) + "-" + strconv.Itoa(int(r.Date.Month())) + "-" + strconv.Itoa(r.Date.Year())
+	parsedURL, _ := url.Parse(URL)
+	return parsedURL
+}
+
+func (p Poller) GeneratePollRequests(districtsToPoll []uint32, days int) (districtsPollRequests []*DistrictPollRequest) {
+	timeInUTC := time.Now()
+	today := timeInUTC.In(p.location)
+	districtsPollRequests = make([]*DistrictPollRequest, 0)
+	for i := 0; i < len(districtsToPoll); i++ {
+		for j := 0; j < days; j++ {
+			districtPollRequest := &DistrictPollRequest{
+				DistrictId: districtsToPoll[i],
+				Date:       today.AddDate(0, 0, j),
+			}
+			districtsPollRequests = append(districtsPollRequests, districtPollRequest)
+		}
+	}
+	return
+}
+
+func NewPoller(sleepDurationBetweenCalls time.Duration, log logr.Logger) Poller {
+	location, _ := time.LoadLocation("Asia/Kolkata")
+	client := &http.Client{
+		Transport: &http2.Transport{},
+	}
+	return Poller{
+		log:                       log,
+		location:                  location,
+		client:                    client,
+		sleepDurationBetweenCalls: sleepDurationBetweenCalls,
+	}
+}
+
+func (p Poller) RunRequests(districtsPollRequests []*DistrictPollRequest) (sessions map[string]*parser.Session) {
 	sessions = map[string]*parser.Session{}
 	c := make(chan SessionsReturned)
 	var wg sync.WaitGroup
 	workersInitCount := 0
-	for _, link := range urls {
+	for _, districtsPollRequest := range districtsPollRequests {
 		if workersInitCount >= 100 {
 			workersInitCount = 0
 			runtime.Gosched()
 		}
-		time.Sleep(sleepDurationBetweenCalls)
+		time.Sleep(p.sleepDurationBetweenCalls)
 		wg.Add(1)
-		go RunRequest(link, client, c, &wg, log)
+		go RunRequest(districtsPollRequest.GetUrl(), p.client, c, &wg, p.log)
 		workersInitCount++
 	}
 	go func() {
@@ -53,7 +100,7 @@ func RunRequests(urls []*url.URL, client *http.Client, sleepDurationBetweenCalls
 			}
 		}
 	}
-	log.V(1).Info("Run complete.", "no_of_sessions", noOfSessions)
+	p.log.V(1).Info("Run complete.", "no_of_sessions", noOfSessions)
 	return
 }
 
@@ -116,28 +163,5 @@ func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned
 	sessionsReturned.StatusCode = statusCode
 	log.V(1).Info("Completed", "url", parsedURL, "retry", 3-retries, "time", time.Since(start), "no_of_sessions", len(sessionsReturned.Session))
 	c <- sessionsReturned
-	return
-}
-
-func GenURLs(districtsToPoll []uint32, days int) (urls []*url.URL) {
-	location, err := time.LoadLocation("Asia/Kolkata")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	timeInUTC := time.Now()
-	today := timeInUTC.In(location)
-	urls = make([]*url.URL, 0)
-	for i := 0; i < len(districtsToPoll); i++ {
-		for j := 0; j < days; j++ {
-			requestDate := today.AddDate(0, 0, j)
-			URL := "https://api.cowin.gov.in/api/v2/appointment/sessions/public/findByDistrict?district_id=" + fmt.Sprint(districtsToPoll[i]) + "&date=" + strconv.Itoa(requestDate.Day()) + "-" + strconv.Itoa(int(requestDate.Month())) + "-" + strconv.Itoa(requestDate.Year())
-			parsedURL, err := url.Parse(URL)
-			if err != nil {
-				IgnoreError(err)
-			}
-			urls = append(urls, parsedURL)
-		}
-	}
 	return
 }

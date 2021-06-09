@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/http2"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -32,13 +31,11 @@ func main() {
 }
 
 func startPolling(log logr.Logger) {
-	client := &http.Client{
-		Transport: &http2.Transport{},
-	}
 	clientForNotifier := &http.Client{
 		Transport: &http.Transport{},
 	}
 	notifierClient := notifier.NewNotifier()
+	polr := poller.NewPoller(0, log.WithName("poller"))
 	webhookDistricts, err := webhook.NewDistricts()
 	if err != nil {
 		log.Error(err, err.Error())
@@ -85,8 +82,8 @@ func startPolling(log logr.Logger) {
 			round = 0
 		}
 		start := time.Now()
-		urls := poller.GenURLs(districtsToPoll, 7)
-		sessions := poller.RunRequests(urls, client, 0, log.WithName("poller.run"))
+		requests := polr.GeneratePollRequests(districtsToPoll, 7)
+		sessions := polr.RunRequests(requests)
 		notifierClient.Notify(sessions, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))
 		fmt.Println(round, time.Since(start))
 		avgTime += time.Since(start).Seconds()
