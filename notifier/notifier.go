@@ -146,7 +146,7 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 			districtID := districtMap.GetDistrictID(session.Session.StateName, session.Session.DistrictName)
 			URLs := webhook.GetCloseWebhooksForDistrict(districtID)
 			webhookSession := parser.CloseWebhook{
-				Dose:            1,
+				Dose:            2,
 				Session:         session.Session,
 				DurationOpenFor: durationpb.New(time.Since(session.TimeCaught)),
 			}
