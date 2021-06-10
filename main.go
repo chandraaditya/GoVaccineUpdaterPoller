@@ -3,6 +3,7 @@ package main
 import (
 	"GoVaccineUpdaterPoller/districts"
 	"GoVaccineUpdaterPoller/notifier"
+	"GoVaccineUpdaterPoller/parser"
 	"GoVaccineUpdaterPoller/poller"
 	"GoVaccineUpdaterPoller/webhook"
 	"encoding/json"
@@ -82,9 +83,10 @@ func startPolling(log logr.Logger) {
 			round = 0
 		}
 		start := time.Now()
-		requests := polr.GeneratePollRequests(districtsToPoll, 7)
-		sessions := polr.RunRequests(requests)
-		notifierClient.Notify(sessions, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))
+		requests := polr.GeneratePollRequests(districtsToPoll, 1)
+		responseChannel := make(chan parser.Session)
+		go polr.RunRequests(requests, responseChannel)
+		notifierClient.Notify(responseChannel, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))
 		fmt.Println(round, time.Since(start))
 		avgTime += time.Since(start).Seconds()
 		round++
