@@ -15,7 +15,7 @@ import (
 )
 
 type SessionsReturned struct {
-	Session    []*parser.Session
+	Sessions   []parser.Session
 	StatusCode int
 }
 
@@ -66,8 +66,8 @@ func NewPoller(sleepDurationBetweenCalls time.Duration, log logr.Logger) Poller 
 	}
 }
 
-func (p Poller) RunRequests(districtsPollRequests []*DistrictPollRequest) (sessions map[string]*parser.Session) {
-	sessions = map[string]*parser.Session{}
+func (p Poller) RunRequests(districtsPollRequests []*DistrictPollRequest) (sessions map[string]parser.Session) {
+	sessions = map[string]parser.Session{}
 	c := make(chan SessionsReturned)
 	var wg sync.WaitGroup
 	workersInitCount := 0
@@ -94,9 +94,9 @@ func (p Poller) RunRequests(districtsPollRequests []*DistrictPollRequest) (sessi
 			statuses[sessionsReturned.StatusCode] = 1
 		}
 		if sessionsReturned.StatusCode == 200 {
-			noOfSessions += len(sessionsReturned.Session)
-			for i := 0; i < len(sessionsReturned.Session); i++ {
-				sessions[sessionsReturned.Session[i].SessionId] = sessionsReturned.Session[i]
+			noOfSessions += len(sessionsReturned.Sessions)
+			for i := 0; i < len(sessionsReturned.Sessions); i++ {
+				sessions[sessionsReturned.Sessions[i].SessionId] = sessionsReturned.Sessions[i]
 			}
 		}
 	}
@@ -107,7 +107,7 @@ func (p Poller) RunRequests(districtsPollRequests []*DistrictPollRequest) (sessi
 func IgnoreError(_ error) {}
 
 func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned, wg *sync.WaitGroup, log logr.Logger) {
-	defer (*wg).Done()
+	defer wg.Done()
 	req := &http.Request{
 		Method: "GET",
 		URL:    parsedURL,
@@ -150,7 +150,7 @@ func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned
 		if err != nil {
 			IgnoreError(err)
 		}
-		sessionsReturned.Session, err = parser.ParseSessions(body)
+		sessionsReturned.Sessions, err = parser.ParseSessions(body)
 		if err != nil {
 			statusCode = -1
 			retries--
@@ -161,7 +161,7 @@ func RunRequest(parsedURL *url.URL, client *http.Client, c chan SessionsReturned
 		break
 	}
 	sessionsReturned.StatusCode = statusCode
-	log.V(1).Info("Completed", "url", parsedURL, "retry", 3-retries, "time", time.Since(start), "no_of_sessions", len(sessionsReturned.Session))
+	log.V(1).Info("Completed", "url", parsedURL, "retry", 3-retries, "time", time.Since(start), "no_of_sessions", len(sessionsReturned.Sessions))
 	c <- sessionsReturned
 	return
 }

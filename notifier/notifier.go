@@ -5,9 +5,8 @@ import (
 	"GoVaccineUpdaterPoller/parser"
 	"GoVaccineUpdaterPoller/webhook"
 	"bytes"
+	"encoding/json"
 	"github.com/go-logr/logr"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"log"
 	"net/http"
 	"net/url"
@@ -22,7 +21,7 @@ type Notifier struct {
 }
 
 type notified struct {
-	Session    *parser.Session
+	Session    parser.Session
 	TimeCaught time.Time
 }
 
@@ -33,27 +32,27 @@ func NewNotifier() Notifier {
 	}
 }
 
-func (n *Notifier) Notify(sessions map[string]*parser.Session, client *http.Client, webhook webhook.Districts, districtMap districts2.Map, log logr.Logger) {
+func (n *Notifier) Notify(sessions map[string]parser.Session, client *http.Client, webhook webhook.Districts, districtMap districts2.Map, log logr.Logger) {
 	count := 0
 	for i := range n.NotifiedDose1 {
-		if _, ok := sessions[n.NotifiedDose1[i].Session.GetSessionId()]; !ok {
+		if _, ok := sessions[n.NotifiedDose1[i].Session.SessionId]; !ok {
 			if count >= 100 {
 				count = 0
 				runtime.Gosched()
 			}
 			count++
-			n.ZeroSlotsLeft(webhook, client, districtMap, n.NotifiedDose1[i].Session.GetSessionId(), 1, log.WithName("zero"))
+			n.ZeroSlotsLeft(webhook, client, districtMap, n.NotifiedDose1[i].Session.SessionId, 1, log.WithName("zero"))
 		}
 	}
 	count = 0
 	for i := range n.NotifiedDose2 {
-		if _, ok := sessions[n.NotifiedDose2[i].Session.GetSessionId()]; !ok {
+		if _, ok := sessions[n.NotifiedDose2[i].Session.SessionId]; !ok {
 			if count >= 100 {
 				count = 0
 				runtime.Gosched()
 			}
 			count++
-			n.ZeroSlotsLeft(webhook, client, districtMap, n.NotifiedDose2[i].Session.GetSessionId(), 2, log.WithName("zero"))
+			n.ZeroSlotsLeft(webhook, client, districtMap, n.NotifiedDose2[i].Session.SessionId, 2, log.WithName("zero"))
 		}
 	}
 	count = 0
@@ -68,23 +67,23 @@ func (n *Notifier) Notify(sessions map[string]*parser.Session, client *http.Clie
 			n.SlotsOpen(webhook, client, districtMap, session, 1, log.WithName("open"))
 		} else {
 			count++
-			n.ZeroSlotsLeft(webhook, client, districtMap, session.GetSessionId(), 1, log.WithName("zero"))
+			n.ZeroSlotsLeft(webhook, client, districtMap, session.SessionId, 1, log.WithName("zero"))
 		}
 		if session.AvailableCapacityDose2 > 0 {
 			count++
 			n.SlotsOpen(webhook, client, districtMap, session, 2, log.WithName("open"))
 		} else {
 			count++
-			n.ZeroSlotsLeft(webhook, client, districtMap, session.GetSessionId(), 2, log.WithName("zero"))
+			n.ZeroSlotsLeft(webhook, client, districtMap, session.SessionId, 2, log.WithName("zero"))
 		}
 	}
 }
 
-func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, districtMap districts2.Map, session *parser.Session, dose int, log logr.Logger) {
+func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, districtMap districts2.Map, session parser.Session, dose int, log logr.Logger) {
 	districtID := districtMap.GetDistrictID(session.StateName, session.DistrictName)
 	URLs := webhook.GetOpenWebhooksForDistrict(districtID)
 	if dose == 1 {
-		if _, ok := n.NotifiedDose1[session.GetSessionId()]; !ok {
+		if _, ok := n.NotifiedDose1[session.SessionId]; !ok {
 			log.V(1).Info("open slots",
 				"district_name", session.DistrictName,
 				"dose", dose,
@@ -95,20 +94,20 @@ func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, dis
 				Dose:    1,
 				Session: session,
 			}
-			marshal, err := protojson.Marshal(&webhookSession)
+			marshal, err := json.Marshal(&webhookSession)
 			if err != nil {
 				log.V(1).Error(err, "unable to marshal")
 				return
 			}
 			go SendToWebhooks(URLs, marshal, client)
-			n.NotifiedDose1[session.GetSessionId()] = notified{
+			n.NotifiedDose1[session.SessionId] = notified{
 				Session:    session,
 				TimeCaught: time.Now(),
 			}
 		}
 	}
 	if dose == 2 {
-		if _, ok := n.NotifiedDose2[session.GetSessionId()]; !ok {
+		if _, ok := n.NotifiedDose2[session.SessionId]; !ok {
 			log.V(1).Info("open slots",
 				"district_name", session.DistrictName,
 				"dose", dose,
@@ -119,13 +118,13 @@ func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, dis
 				Dose:    2,
 				Session: session,
 			}
-			marshal, err := protojson.Marshal(&webhookSession)
+			marshal, err := json.Marshal(&webhookSession)
 			if err != nil {
 				log.V(1).Error(err, "unable to marshal")
 				return
 			}
 			go SendToWebhooks(URLs, marshal, client)
-			n.NotifiedDose2[session.GetSessionId()] = notified{
+			n.NotifiedDose2[session.SessionId] = notified{
 				Session:    session,
 				TimeCaught: time.Now(),
 			}
@@ -148,9 +147,9 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 			webhookSession := parser.CloseWebhook{
 				Dose:            1,
 				Session:         session.Session,
-				DurationOpenFor: durationpb.New(time.Since(session.TimeCaught)),
+				DurationOpenFor: time.Since(session.TimeCaught).String(),
 			}
-			marshal, err := protojson.Marshal(&webhookSession)
+			marshal, err := json.Marshal(&webhookSession)
 			if err != nil {
 				log.V(1).Error(err, "unable to marshal")
 				return
@@ -173,9 +172,9 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 			webhookSession := parser.CloseWebhook{
 				Dose:            2,
 				Session:         session.Session,
-				DurationOpenFor: durationpb.New(time.Since(session.TimeCaught)),
+				DurationOpenFor: time.Since(session.TimeCaught).String(),
 			}
-			marshal, err := protojson.Marshal(&webhookSession)
+			marshal, err := json.Marshal(&webhookSession)
 			if err != nil {
 				log.V(1).Error(err, "unable to marshal")
 				return
