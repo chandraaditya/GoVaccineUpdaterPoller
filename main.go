@@ -36,7 +36,7 @@ func startPolling(log logr.Logger) {
 		Transport: &http.Transport{},
 	}
 	notifierClient := notifier.NewNotifier()
-	polr := poller.NewPoller(10*time.Millisecond, log.WithName("poller"))
+	polr := poller.NewPoller(100*time.Millisecond, log.WithName("poller"))
 	webhookDistricts, err := webhook.NewDistricts()
 	if err != nil {
 		log.Error(err, err.Error())

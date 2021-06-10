@@ -99,7 +99,7 @@ func (n *Notifier) SlotsOpen(webhook webhook.Districts, client *http.Client, dis
 			"session_id", session.SessionId,
 		)
 		webhookSession := parser.OpenWebhook{
-			Dose:    1,
+			Dose:    dose,
 			Session: session,
 		}
 		marshal, err := json.Marshal(&webhookSession)
@@ -133,7 +133,7 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 		districtID := districtMap.GetDistrictID(session.Session.StateName, session.Session.DistrictName)
 		URLs := webhook.GetCloseWebhooksForDistrict(districtID)
 		webhookSession := parser.CloseWebhook{
-			Dose:            1,
+			Dose:            dose,
 			Session:         session.Session,
 			DurationOpenFor: time.Since(session.TimeCaught).String(),
 		}
@@ -169,7 +169,7 @@ func SendToWebhooks(URLs []*url.URL, body []byte, client *http.Client) {
 }
 
 func SendToWebhook(parsedURL *url.URL, body []byte, client *http.Client, c chan struct{}, wg *sync.WaitGroup) {
-	defer (*wg).Done()
+	defer wg.Done()
 	_, err := client.Post(parsedURL.String(), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Println("unable to send to webhook:", err)
