@@ -10,23 +10,67 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
 const rounds = 100
 
 var (
-	log logr.Logger
+	log    logr.Logger
+	logOpt string
 )
 
+func init() {
+
+	// Predence order is CLI -> ENV -> FILE
+
+	pflag.String("log", "development", "log format: production or development")
+	pflag.String("config", "", "Configuration location")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/etc/poller/")   // path to look for the config file in
+	viper.AddConfigPath("$HOME/.poller/") // call multiple times to add many search paths
+	viper.AddConfigPath(".")
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvKeyReplacer(replacer)
+
+	//defaults
+	viper.SetDefault("log", "development")
+
+	viper.AutomaticEnv()
+}
+
 func main() {
-	l := getLogger("development")
+	pflag.Parse()
+	_ = viper.BindPFlags(pflag.CommandLine)
+	configLocation := viper.GetString("config")
+	if configLocation != "" {
+		println("Adding log file " + configLocation)
+		viper.SetConfigFile(configLocation)
+	}
+	if err := viper.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+	logOpt = viper.GetString("log")
+	if logOpt == "development" {
+		viper.Debug()
+	}
+	l := getLogger(logOpt)
 	log = zapr.NewLogger(l)
+	defer func() { _ = l.Sync() }()
+
+	for _, key := range viper.AllKeys() {
+		viper.Set(key, viper.Get(key))
+	}
+
 	go webhook.StartWebhookServer()
 	startPolling(log.WithName("start.polling"))
 }
@@ -67,11 +111,6 @@ func startPolling(log logr.Logger) {
 				}
 			}
 			avgTime = 0.0
-			err = webhookDistricts.UpdateDistricts()
-			if err != nil {
-				log.Error(err, err.Error())
-				continue
-			}
 			districtsMapTemp, err := districts.GetDistrictsMap()
 			if err != nil {
 				log.Error(err, err.Error())
