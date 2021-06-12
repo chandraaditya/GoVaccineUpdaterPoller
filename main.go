@@ -83,7 +83,7 @@ func startPolling(log logr.Logger) {
 			round = 0
 		}
 		start := time.Now()
-		requests := polr.GeneratePollRequests(districtsToPoll, 1)
+		requests := polr.GeneratePollRequests(districtsToPoll, 7)
 		responseChannel := make(chan parser.Session)
 		go polr.RunRequests(requests, responseChannel)
 		notifierClient.Notify(responseChannel, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))
