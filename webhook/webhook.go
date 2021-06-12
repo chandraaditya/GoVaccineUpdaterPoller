@@ -1,11 +1,9 @@
 package webhook
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"log"
 	"net/url"
 )
@@ -17,7 +15,7 @@ type Districts struct {
 type Config struct {
 	SlotOpenWebhook       string   `json:"slot_open_webhook,omitempty" mapstructure:"slot-open-webhook"`
 	SlotClosedWebhook     string   `json:"slot_closed_webhook,omitempty" mapstructure:"slot-closed-webhook"`
-	DistrictsSubscribedTo []uint32 `json:"districts_subscribed_to" mapstructure:"districts"`
+	DistrictsSubscribedTo []uint32 `json:"districts" mapstructure:"districts"`
 }
 
 type APIKeys struct {
@@ -51,19 +49,8 @@ func (w *Districts) UpdateDistricts() error {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
-	keys, err := ioutil.ReadFile("webhook_configs/keys.json")
-	if err != nil {
-		log.Println("error reading webhook keys", err)
-		return err
-	}
-	var apiKeys APIKeys
-	err = json.Unmarshal(keys, &apiKeys)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	newList := map[uint32][]Config{}
-	for _, cnf := range apiKeys.ApiKeys {
+	for _, cnf := range config.ApiKeys {
 		for _, currentDistrict := range cnf.DistrictsSubscribedTo {
 			if _, ok := newList[currentDistrict]; ok {
 				newList[currentDistrict] = append(newList[currentDistrict], cnf)

@@ -21,8 +21,6 @@ import (
 	"time"
 )
 
-const rounds = 100
-
 var (
 	log    logr.Logger
 	logOpt string
@@ -44,6 +42,8 @@ func init() {
 
 	//defaults
 	viper.SetDefault("log", "development")
+	viper.SetDefault("poller.exit", false)
+	viper.SetDefault("poller.no-of-days", 7)
 
 	viper.AutomaticEnv()
 }
@@ -95,6 +95,7 @@ func startPolling(log logr.Logger) {
 		os.Exit(1)
 	}
 	round := 0
+	rounds := viper.GetInt("poller.no-of-rounds")
 	avgTime := 0.0
 	for {
 		if round >= rounds {
@@ -120,9 +121,12 @@ func startPolling(log logr.Logger) {
 			districtsFromWebhook = webhookDistricts.GetDistricts()
 			districtsToPoll = districts.GetDistrictsToPoll(districtsFromWebhook, 1, 0)
 			round = 0
+			if viper.GetBool("poller.exit") {
+				return
+			}
 		}
 		start := time.Now()
-		requests := polr.GeneratePollRequests(districtsToPoll, 1)
+		requests := polr.GeneratePollRequests(districtsToPoll, viper.GetInt("poller.no-of-days"))
 		responseChannel := make(chan parser.Session)
 		go polr.RunRequests(requests, responseChannel)
 		notifierClient.Notify(responseChannel, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))

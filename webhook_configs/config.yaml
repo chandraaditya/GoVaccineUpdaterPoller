@@ -1,7 +1,12 @@
+log: development
+poller:
+  no-of-rounds: 1
+  exit: true
+  no-of-days: 1
+
 api-keys:
   project-lifeline-sejuilobrg78o934:
     slot-open-webhook: "http://localhost:8000/open_hook"
     slot-closed-webhook: "http://localhost:8000/close_hook"
     districts:
       - 294
-      - 10
