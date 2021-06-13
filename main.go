@@ -45,6 +45,10 @@ func init() {
 	viper.SetDefault("poller.exit", false)
 	viper.SetDefault("poller.no-of-days", 7)
 
+	viper.SetDefault("notifier.cache-type", "in-memory")
+	viper.SetDefault("notifier.redis.host", "localhost:6379")
+	viper.SetDefault("notifier.redis.ttl", 24*time.Hour)
+
 	viper.AutomaticEnv()
 }
 
@@ -79,7 +83,9 @@ func startPolling(log logr.Logger) {
 	clientForNotifier := &http.Client{
 		Transport: &http.Transport{},
 	}
-	notifierClient := notifier.NewNotifier()
+	notifierClient := notifier.NewNotifier(viper.GetString("notifier.cache-type"),
+		log.WithName("notifier"), viper.GetString("notifier.redis.host"),
+		viper.GetString("notifier.redis.password"), viper.GetInt("notifier.redis.db-index"), viper.GetDuration("notifier.redis.ttl"))
 	polr := poller.NewPoller(100*time.Millisecond, log.WithName("poller"))
 	webhookDistricts, err := webhook.NewDistricts()
 	if err != nil {
