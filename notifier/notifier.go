@@ -115,7 +115,7 @@ func (n *Notifier) ZeroSlotsLeft(webhook webhook.Districts, client *http.Client,
 		webhookSession := parser.CloseWebhook{
 			Dose:            dose,
 			Session:         session,
-			DurationOpenFor: time.Since(caughtAt).String(),
+			DurationOpenFor: time.Since(caughtAt).Truncate(time.Second).String(),
 		}
 		marshal, err := json.Marshal(&webhookSession)
 		if err != nil {
