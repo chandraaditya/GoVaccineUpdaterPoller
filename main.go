@@ -44,6 +44,8 @@ func init() {
 	viper.SetDefault("log", "development")
 	viper.SetDefault("poller.exit", false)
 	viper.SetDefault("poller.no-of-days", 7)
+	viper.SetDefault("poller.chunks.total", 1)
+	viper.SetDefault("poller.chunks.current", 0)
 
 	viper.SetDefault("notifier.cache-type", "in-memory")
 	viper.SetDefault("notifier.redis.host", "localhost:6379")
@@ -125,7 +127,7 @@ func startPolling(log logr.Logger) {
 				districtsMap = districtsMapTemp
 			}
 			districtsFromWebhook = webhookDistricts.GetDistricts()
-			districtsToPoll = districts.GetDistrictsToPoll(districtsFromWebhook, 1, 0)
+			districtsToPoll = districts.GetDistrictsToPoll(districtsFromWebhook, viper.GetInt("poller.chunks.total"), viper.GetInt("poller.chunks.current"))
 			round = 0
 			if viper.GetBool("poller.exit") {
 				return

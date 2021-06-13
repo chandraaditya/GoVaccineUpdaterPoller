@@ -1,8 +1,11 @@
 log: development
 poller:
-  no-of-rounds: 1
+  no-of-rounds: 10
   exit: true
-  no-of-days: 1
+  no-of-days: 2
+  chunks:
+    total: 1
+    current: 0
 
 notifier:
   # cache-type: in-memory

@@ -4,6 +4,9 @@ poller:
   no-of-rounds: 100
   exit: false
   no-of-days: 7
+  chunks:
+    total: 1
+    current: 0
 
 api-keys:
   project-lifeline-sejuilobrg78o934:
