@@ -1,0 +1,22 @@
+log: development
+poller:
+  no-of-rounds: 10
+  exit: true
+  no-of-days: 2
+  chunks:
+    total: 1
+    current: 0
+
+notifier:
+  # cache-type: in-memory
+  cache-type: redis
+  redis:
+    host: "localhost:6379"
+    ttl: "24h"
+
+api-keys:
+  project-lifeline-sejuilobrg78o934:
+    slot-open-webhook: "http://localhost:8000/open_hook"
+    slot-closed-webhook: "http://localhost:8000/close_hook"
+    districts:
+      - 294

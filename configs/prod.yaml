@@ -1,0 +1,15 @@
+log: production
+
+poller:
+  no-of-rounds: 100
+  exit: false
+  no-of-days: 7
+  chunks:
+    total: 1
+    current: 0
+
+api-keys:
+  project-lifeline-sejuilobrg78o934:
+    slot-open-webhook: "http://167.71.235.101:8000/open_hook"
+    slot-closed-webhook: "http://167.71.235.101:8000/close_hook"
+    districts: [265,294,571,575,140,141,142,143,144,145,146,147,148,149,150,581,596,603,725,721,395,394,392,8,307]

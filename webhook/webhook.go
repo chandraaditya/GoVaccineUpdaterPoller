@@ -1,8 +1,9 @@
 package webhook
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 	"log"
 	"net/url"
 )
@@ -12,34 +13,20 @@ type Districts struct {
 }
 
 type Config struct {
-	ApiKey                string   `json:"api_key"`
-	SlotOpenWebhook       string   `json:"slot_open_webhook,omitempty"`
-	SlotClosedWebhook     string   `json:"slot_closed_webhook,omitempty"`
-	DistrictsSubscribedTo []uint32 `json:"districts_subscribed_to"`
+	SlotOpenWebhook       string   `json:"slot_open_webhook,omitempty" mapstructure:"slot-open-webhook"`
+	SlotClosedWebhook     string   `json:"slot_closed_webhook,omitempty" mapstructure:"slot-closed-webhook"`
+	DistrictsSubscribedTo []uint32 `json:"districts" mapstructure:"districts"`
 }
 
 type APIKeys struct {
-	ApiKeys []string `json:"api_keys"`
+	ApiKeys map[string]Config `json:"api_keys" mapstructure:"api-keys"`
 }
 
+var config *APIKeys
+
 func VerifyAPIKey(key string) bool {
-	var apiKeys APIKeys
-	keys, err := ioutil.ReadFile("webhook_configs/keys.json")
-	if err != nil {
-		log.Println("error reading webhook keys", err)
-		return false
-	}
-	err = json.Unmarshal(keys, &apiKeys)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	for i := range apiKeys.ApiKeys {
-		if key == apiKeys.ApiKeys[i] {
-			return true
-		}
-	}
-	return false
+	_, ok := config.ApiKeys[key]
+	return ok
 }
 
 func NewDistricts() (Districts, error) {
@@ -49,36 +36,26 @@ func NewDistricts() (Districts, error) {
 		log.Println("unable to create new webhook", err)
 		return w, err
 	}
+	viper.WatchConfig()
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		_ = w.UpdateDistricts()
+	})
 	return w, nil
 }
 
 func (w *Districts) UpdateDistricts() error {
-	keys, err := ioutil.ReadFile("webhook_configs/keys.json")
-	if err != nil {
-		log.Println("error reading webhook keys", err)
-		return err
+	//var config APIKeys
+	if err := viper.Unmarshal(&config); err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
-	var apiKeys APIKeys
-	err = json.Unmarshal(keys, &apiKeys)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+
 	newList := map[uint32][]Config{}
-	for i := range apiKeys.ApiKeys {
-		configFile, err := ioutil.ReadFile("webhook_configs/" + apiKeys.ApiKeys[i] + ".json")
-		if err != nil {
-			log.Println("error reading webhook config json:", err)
-			continue
-		}
-		var config Config
-		err = json.Unmarshal(configFile, &config)
-		for i := range config.DistrictsSubscribedTo {
-			currentDistrict := config.DistrictsSubscribedTo[i]
+	for _, cnf := range config.ApiKeys {
+		for _, currentDistrict := range cnf.DistrictsSubscribedTo {
 			if _, ok := newList[currentDistrict]; ok {
-				newList[currentDistrict] = append(newList[currentDistrict], config)
+				newList[currentDistrict] = append(newList[currentDistrict], cnf)
 			} else {
-				newList[currentDistrict] = []Config{config}
+				newList[currentDistrict] = []Config{cnf}
 			}
 		}
 	}

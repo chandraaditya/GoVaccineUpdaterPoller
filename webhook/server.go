@@ -2,13 +2,19 @@ package webhook
 
 import (
 	districts2 "GoVaccineUpdaterPoller/districts"
+	"github.com/spf13/viper"
+	"strconv"
+
+	//districts2 "GoVaccineUpdaterPoller/districts"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
+
+	//"net/url"
+	//"strconv"
 	"time"
 )
 
@@ -34,9 +40,9 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var config Config
+	var cnf Config
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&config)
+	err := decoder.Decode(&cnf)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -49,7 +55,8 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verified := VerifyAPIKey(config.ApiKey)
+	apiKey := r.Header.Get("X-Api-Key")
+	verified := VerifyAPIKey(apiKey)
 	if !verified {
 		log.Println(err)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -62,8 +69,8 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, errPRU1 := url.ParseRequestURI(config.SlotOpenWebhook)
-	_, errPRU2 := url.ParseRequestURI(config.SlotClosedWebhook)
+	_, errPRU1 := url.ParseRequestURI(cnf.SlotOpenWebhook)
+	_, errPRU2 := url.ParseRequestURI(cnf.SlotClosedWebhook)
 	if errPRU1 != nil && errPRU2 != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -89,10 +96,10 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := range config.DistrictsSubscribedTo {
-		if !districtsMap.VerifyDistrict(config.DistrictsSubscribedTo[i]) {
+	for i := range cnf.DistrictsSubscribedTo {
+		if !districtsMap.VerifyDistrict(cnf.DistrictsSubscribedTo[i]) {
 			w.WriteHeader(http.StatusBadRequest)
-			_, err = w.Write([]byte(`{"message": "` + strconv.Itoa(int(config.DistrictsSubscribedTo[i])) + ` is not a valid district"}`))
+			_, err = w.Write([]byte(`{"message": "` + strconv.Itoa(int(cnf.DistrictsSubscribedTo[i])) + ` is not a valid district"}`))
 			if err != nil {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				log.Println(err)
@@ -102,20 +109,12 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	marshal, err := json.Marshal(config)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_, err = w.Write([]byte(`{"message": "internal server error"}`))
-		if err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
-			return
-		}
-		return
-	}
+	viper.Set("api-keys."+apiKey+".slot-open-webhook", cnf.SlotOpenWebhook)
+	viper.Set("api-keys."+apiKey+".slot-closed-webhook", cnf.SlotClosedWebhook)
+	viper.Set("api-keys."+apiKey+".districts", cnf.DistrictsSubscribedTo)
 
-	err = ioutil.WriteFile("webhook_configs/"+config.ApiKey+".json", marshal, 0644)
+	err = viper.WriteConfig()
+
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
