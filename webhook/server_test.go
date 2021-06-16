@@ -29,6 +29,7 @@ api-keys:
 		log.Fatal(err)
 	}
 
+	//goland:noinspection GoUnhandledErrorResult
 	defer os.Remove(tmpfile.Name()) // clean up
 
 	if _, err := tmpfile.Write(yamlExample); err != nil {
@@ -116,7 +117,7 @@ func TestUpdateDistrictsNegativeCases(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			config = &APIKeys{ApiKeys: map[string]Config{
-				"api-key-1": Config{},
+				"api-key-1": {},
 			}}
 			request := httptest.NewRequest(tc.method, "/update_district", strings.NewReader(tc.body))
 			if tc.key != "" {

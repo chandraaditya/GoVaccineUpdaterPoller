@@ -10,23 +10,23 @@ import (
 )
 
 type State struct {
-	StateId   uint32 `json:"state_id,omitempty"`
+	StateId   int    `json:"state_id,omitempty"`
 	StateName string `json:"state_name,omitempty"`
 }
 
 type States struct {
 	States []State `json:"states,omitempty"`
-	Ttl    uint32  `json:"ttl,omitempty"`
+	Ttl    int     `json:"ttl,omitempty"`
 }
 
 type District struct {
-	DistrictId   uint32 `json:"district_id,omitempty"`
+	DistrictId   int    `json:"district_id,omitempty"`
 	DistrictName string `json:"district_name,omitempty"`
 }
 
 type Districts struct {
 	Districts []District `json:"districts,omitempty"`
-	Ttl       uint32     `json:"ttl,omitempty"`
+	Ttl       int        `json:"ttl,omitempty"`
 }
 
 type districtState struct {
@@ -35,30 +35,30 @@ type districtState struct {
 }
 
 type Map struct {
-	getStateName    map[uint32]string
-	getStateID      map[string]uint32
-	getDistrictInfo map[uint32]districtState
-	getDistrictID   map[string]map[string]uint32
-	districts       []uint32
+	getStateName    map[int]string
+	getStateID      map[string]int
+	getDistrictInfo map[int]districtState
+	getDistrictID   map[string]map[string]int
+	districts       []int
 }
 
-func (m *Map) GetStateID(name string) uint32 {
+func (m *Map) GetStateID(name string) int {
 	return m.getStateID[name]
 }
 
-func (m *Map) GetStateName(id uint32) string {
+func (m *Map) GetStateName(id int) string {
 	return m.getStateName[id]
 }
 
-func (m *Map) GetDistrictInformation(id uint32) (string, string) {
+func (m *Map) GetDistrictInformation(id int) (string, string) {
 	return m.getDistrictInfo[id].state, m.getDistrictInfo[id].district
 }
 
-func (m *Map) GetDistrictID(state string, district string) uint32 {
+func (m *Map) GetDistrictID(state string, district string) int {
 	return m.getDistrictID[state][district]
 }
 
-func (m *Map) VerifyDistrict(id uint32) bool {
+func (m *Map) VerifyDistrict(id int) bool {
 	for i := range m.districts {
 		if id == m.districts[i] {
 			return true
@@ -68,7 +68,7 @@ func (m *Map) VerifyDistrict(id uint32) bool {
 }
 
 // GetDistrictsToPoll chunkNo is 0 indexed
-func GetDistrictsToPoll(districts []uint32, chunks int, chunkNo int) []uint32 {
+func GetDistrictsToPoll(districts []int, chunks int, chunkNo int) []int {
 	localSlice := districts
 	sort.Slice(localSlice, func(i, j int) bool { return localSlice[i] < localSlice[j] })
 	numberOfDistricts := len(localSlice)
@@ -81,16 +81,16 @@ func GetDistrictsToPoll(districts []uint32, chunks int, chunkNo int) []uint32 {
 	return localSlice[startIndex:endIndex]
 }
 
-func (m *Map) GetDistricts() []uint32 {
+func (m *Map) GetDistricts() []int {
 	return m.districts
 }
 
 func GetDistrictsMap() (Map, error) {
 	m := Map{
-		getStateName:    map[uint32]string{},
-		getStateID:      map[string]uint32{},
-		getDistrictInfo: map[uint32]districtState{},
-		getDistrictID:   map[string]map[string]uint32{},
+		getStateName:    map[int]string{},
+		getStateID:      map[string]int{},
+		getDistrictInfo: map[int]districtState{},
+		getDistrictID:   map[string]map[string]int{},
 	}
 
 	client := &http.Client{}
@@ -150,7 +150,7 @@ func GetDistrictsMap() (Map, error) {
 			if _, ok := m.getDistrictID[states.States[i].StateName]; ok {
 				m.getDistrictID[states.States[i].StateName][districts.Districts[j].DistrictName] = districts.Districts[j].DistrictId
 			} else {
-				m.getDistrictID[states.States[i].StateName] = map[string]uint32{}
+				m.getDistrictID[states.States[i].StateName] = map[string]int{}
 				m.getDistrictID[states.States[i].StateName][districts.Districts[j].DistrictName] = districts.Districts[j].DistrictId
 			}
 			m.districts = append(m.districts, districts.Districts[j].DistrictId)

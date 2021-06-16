@@ -26,7 +26,7 @@ type Poller struct {
 }
 
 type DistrictPollRequest struct {
-	DistrictId uint32
+	DistrictId int
 	Date       time.Time
 }
 
@@ -36,7 +36,7 @@ func (r DistrictPollRequest) GetUrl() *url.URL {
 	return parsedURL
 }
 
-func (p Poller) GeneratePollRequests(districtsToPoll []uint32, days int) (districtsPollRequests []*DistrictPollRequest) {
+func (p Poller) GeneratePollRequests(districtsToPoll []int, days int) (districtsPollRequests []*DistrictPollRequest) {
 	timeInUTC := time.Now()
 	today := timeInUTC.In(p.location)
 	districtsPollRequests = make([]*DistrictPollRequest, 0)

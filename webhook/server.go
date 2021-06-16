@@ -2,10 +2,10 @@ package webhook
 
 import (
 	districts2 "GoVaccineUpdaterPoller/districts"
+	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	"strconv"
 
-	//districts2 "GoVaccineUpdaterPoller/districts"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,19 +13,21 @@ import (
 	"net/http"
 	"net/url"
 
-	//"net/url"
-	//"strconv"
 	"time"
 )
 
-func StartWebhookServer() {
-	s := &server{}
+func StartWebhookServer(log logr.Logger) {
+	s := &server{
+		log: log,
+	}
 	http.HandleFunc("/update_districts", s.UpdateDistricts)
 	http.HandleFunc("/status", s.Status)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	panic(http.ListenAndServe(":8080", nil))
 }
 
-type server struct{}
+type server struct {
+	log logr.Logger
+}
 
 func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -34,7 +36,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(`{"message": "this endpoint only supports post http requests contact the developer for more information"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -49,7 +51,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 		_, err = w.Write([]byte(`{"message": "bad request"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -58,12 +60,12 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	apiKey := r.Header.Get("X-Api-Key")
 	verified := VerifyAPIKey(apiKey)
 	if !verified {
-		log.Println(err)
+		s.log.V(1).Info("invalid api key")
 		w.WriteHeader(http.StatusUnauthorized)
 		_, err = w.Write([]byte(`{"message": "unauthorized request"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -72,12 +74,13 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	_, errPRU1 := url.ParseRequestURI(cnf.SlotOpenWebhook)
 	_, errPRU2 := url.ParseRequestURI(cnf.SlotClosedWebhook)
 	if errPRU1 != nil && errPRU2 != nil {
-		log.Println(err)
+		s.log.V(1).Error(errPRU1, errPRU1.Error())
+		s.log.V(1).Error(errPRU2, errPRU2.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		_, err = w.Write([]byte(`{"message": "invalid slot_open_webhook or slot_closed_webhook, either one of the fields must be valid endpoints, but both are not required"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -85,12 +88,12 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 
 	districtsMap, err := districts2.GetDistrictsMap()
 	if err != nil {
-		log.Println(err)
+		s.log.V(1).Error(err, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err = w.Write([]byte(`{"message": "internal server error"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -99,10 +102,10 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	for i := range cnf.DistrictsSubscribedTo {
 		if !districtsMap.VerifyDistrict(cnf.DistrictsSubscribedTo[i]) {
 			w.WriteHeader(http.StatusBadRequest)
-			_, err = w.Write([]byte(`{"message": "` + strconv.Itoa(int(cnf.DistrictsSubscribedTo[i])) + ` is not a valid district"}`))
+			_, err = w.Write([]byte(`{"message": "` + strconv.Itoa(cnf.DistrictsSubscribedTo[i]) + ` is not a valid district"}`))
 			if err != nil {
 				w.WriteHeader(http.StatusServiceUnavailable)
-				log.Println(err)
+				s.log.V(1).Error(err, err.Error())
 				return
 			}
 			return
@@ -116,12 +119,12 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	err = viper.WriteConfig()
 
 	if err != nil {
-		log.Println(err)
+		s.log.V(1).Error(err, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		_, err = w.Write([]byte(`{"message": "internal server error"}`))
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Println(err)
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 		return
@@ -129,7 +132,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 
 	err = r.Body.Close()
 	if err != nil {
-		log.Println("unable to close body:", err)
+		s.log.V(1).Error(err, err.Error())
 		return
 	}
 
@@ -137,7 +140,7 @@ func (s *server) UpdateDistricts(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(`{"message": "successfully updated"}`))
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		log.Println(err)
+		s.log.V(1).Error(err, err.Error())
 		return
 	}
 }
@@ -151,7 +154,7 @@ func (s *server) Status(w http.ResponseWriter, _ *http.Request) {
 	var status Status
 	keys, err := ioutil.ReadFile("status_static_files/status.json")
 	if err != nil {
-		log.Println("error reading status", err)
+		s.log.V(1).Error(err, err.Error())
 		_, err = fmt.Fprintf(w, "unknown error")
 		if err != nil {
 			return
@@ -159,18 +162,20 @@ func (s *server) Status(w http.ResponseWriter, _ *http.Request) {
 	}
 	err = json.Unmarshal(keys, &status)
 	if err != nil {
-		log.Println("error reading status", err)
+		s.log.V(1).Error(err, err.Error())
 		_, err = fmt.Fprintf(w, "unknown error")
 		if err != nil {
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 	}
 	tm := time.Unix(status.LastUpdated, 0).Local()
 	_, err = fmt.Fprintf(w, "update frequency: %fs\nlast updated: %s", status.UpdateFrequency, tm.String())
 	if err != nil {
-		log.Println("error reading status", err)
+		s.log.V(1).Error(err, err.Error())
 		_, err = fmt.Fprintf(w, "unknown error")
 		if err != nil {
+			s.log.V(1).Error(err, err.Error())
 			return
 		}
 	}

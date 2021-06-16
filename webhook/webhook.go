@@ -9,13 +9,13 @@ import (
 )
 
 type Districts struct {
-	DistrictsWithDestinations map[uint32][]Config
+	DistrictsWithDestinations map[int][]Config
 }
 
 type Config struct {
-	SlotOpenWebhook       string   `json:"slot_open_webhook,omitempty" mapstructure:"slot-open-webhook"`
-	SlotClosedWebhook     string   `json:"slot_closed_webhook,omitempty" mapstructure:"slot-closed-webhook"`
-	DistrictsSubscribedTo []uint32 `json:"districts" mapstructure:"districts"`
+	SlotOpenWebhook       string `json:"slot_open_webhook,omitempty" mapstructure:"slot-open-webhook"`
+	SlotClosedWebhook     string `json:"slot_closed_webhook,omitempty" mapstructure:"slot-closed-webhook"`
+	DistrictsSubscribedTo []int  `json:"districts" mapstructure:"districts"`
 }
 
 type APIKeys struct {
@@ -44,13 +44,25 @@ func NewDistricts() (Districts, error) {
 }
 
 func (w *Districts) UpdateDistricts() error {
-	//var config APIKeys
-	if err := viper.Unmarshal(&config); err != nil {
+	var c APIKeys
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+	for _, key := range viper.AllKeys() {
+		viper.Set(key, viper.Get(key))
+		log.Println(key, viper.Get(key))
+	}
+	if err := viper.Unmarshal(&c); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
-	newList := map[uint32][]Config{}
-	for _, cnf := range config.ApiKeys {
+	config = &c
+
+	log.Println(c)
+
+	newList := map[int][]Config{}
+	for _, cnf := range c.ApiKeys {
 		for _, currentDistrict := range cnf.DistrictsSubscribedTo {
 			if _, ok := newList[currentDistrict]; ok {
 				newList[currentDistrict] = append(newList[currentDistrict], cnf)
@@ -59,19 +71,21 @@ func (w *Districts) UpdateDistricts() error {
 			}
 		}
 	}
+	log.Println(w.DistrictsWithDestinations)
 	w.DistrictsWithDestinations = newList
+	log.Println(w.DistrictsWithDestinations)
 	return nil
 }
 
-func (w *Districts) GetDistricts() []uint32 {
-	slice := make([]uint32, 0)
+func (w *Districts) GetDistricts() []int {
+	slice := make([]int, 0)
 	for i := range w.DistrictsWithDestinations {
 		slice = append(slice, i)
 	}
 	return slice
 }
 
-func (w *Districts) GetOpenWebhooksForDistrict(district uint32) []*url.URL {
+func (w *Districts) GetOpenWebhooksForDistrict(district int) []*url.URL {
 	webhooks := make([]*url.URL, 0)
 	configs := w.DistrictsWithDestinations[district]
 	for _, config := range configs {
@@ -84,7 +98,7 @@ func (w *Districts) GetOpenWebhooksForDistrict(district uint32) []*url.URL {
 	return webhooks
 }
 
-func (w *Districts) GetCloseWebhooksForDistrict(district uint32) []*url.URL {
+func (w *Districts) GetCloseWebhooksForDistrict(district int) []*url.URL {
 	webhooks := make([]*url.URL, 0)
 	configs := w.DistrictsWithDestinations[district]
 	for _, config := range configs {

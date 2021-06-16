@@ -77,7 +77,7 @@ func main() {
 		viper.Set(key, viper.Get(key))
 	}
 
-	go webhook.StartWebhookServer()
+	go webhook.StartWebhookServer(log.WithName("server"))
 	startPolling(log.WithName("start.polling"))
 }
 
@@ -138,7 +138,7 @@ func startPolling(log logr.Logger) {
 		responseChannel := make(chan parser.Session)
 		go polr.RunRequests(requests, responseChannel)
 		notifierClient.Notify(responseChannel, clientForNotifier, webhookDistricts, districtsMap, log.WithName("notifier.notify"))
-		fmt.Println(round, time.Since(start))
+		log.Info("round over", "round number", round, "time taken", time.Since(start))
 		avgTime += time.Since(start).Seconds()
 		round++
 	}
