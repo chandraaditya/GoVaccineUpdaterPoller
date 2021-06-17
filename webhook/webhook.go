@@ -46,13 +46,6 @@ func NewDistricts() (Districts, error) {
 func (w *Districts) UpdateDistricts() error {
 	var c APIKeys
 
-	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
-	}
-	for _, key := range viper.AllKeys() {
-		viper.Set(key, viper.Get(key))
-		log.Println(key, viper.Get(key))
-	}
 	if err := viper.Unmarshal(&c); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}

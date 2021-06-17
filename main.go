@@ -73,10 +73,6 @@ func main() {
 	log = zapr.NewLogger(l)
 	defer func() { _ = l.Sync() }()
 
-	for _, key := range viper.AllKeys() {
-		viper.Set(key, viper.Get(key))
-	}
-
 	go webhook.StartWebhookServer(log.WithName("server"))
 	startPolling(log.WithName("start.polling"))
 }
