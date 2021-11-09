@@ -1,6 +1,6 @@
 # Bangalore Vaccine Updater - GoLang CoWIN polling service
 
-This project was used by the Twitter account [`Banglore Vaccine Updater`](https://twitter.com/BloreVaccine) to poll CoWIN APIs to detect changes in the vaccination slot availability. And then notify the general public about the same via the above mentioned Twitter bot. 
+This project was used to create the Twitter bot [`Banglore Vaccine Updater`](https://twitter.com/BloreVaccine) to poll CoWIN APIs to detect changes in the vaccination slot availability. And then notify the general public about the same via the above mentioned Twitter bot. 
 
 #### How does it work, and what are the issues and challenges? 
 
