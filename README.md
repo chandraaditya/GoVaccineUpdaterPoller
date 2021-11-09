@@ -16,4 +16,4 @@ We were essnetially trying to reduce our resouces as we were doing all this out 
 
 End of the day we managed to run this entire service from duel core DO with 4GB RAM, for $5 a month. So we basically went above and beyond our requrirments as with the funding we got was more than enough to spin up 10 servers, but doing it with 1 and tight requirments is more fun as an engineer :)
 
-###### Warning: This project is misued can cause damage. Use at your own discretion. We are not liable for misuse of this project.
+###### Warning: This project if misued can cause damage. Use at your own discretion. We are not liable for misuse of this project.
